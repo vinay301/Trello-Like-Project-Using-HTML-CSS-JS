@@ -14,7 +14,6 @@
 
     <!--fontAwesome CDN-->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <!-- <script src="https://kit.fontawesome.com/37bd528d31.js" crossorigin="anonymous"></script> -->
     <title>Trello</title>
 </head>
 <body>
@@ -28,18 +27,32 @@
             </div>
             <div class="top_menu">
                 <div class="logo">Trello</div>
+                <h1 id="board-title-header"></h1>
                 <ul>
-                    <li><a href="#"><i class="fa-solid fa-trash"></i></a></li>
+                    <li><a href="#" id="delete-board-btn"><i class="fa-solid fa-trash"></i></a></li>
                     <li><a href="#"><i class="fa-solid fa-floppy-disk"></i></a></li>
                     <li><a href="#"><i class="fa-solid fa-gear"></i></a></li>
                 </ul>
+
             </div>
         </div>
 
         <div class="sidebar">
+            <div class="boards-list" id="boards-list">
+                <!-- New boards will be added here -->
+                <div class="board-card">
+                    <div class="img"></div>
+                    <div class="textBox">
+                      <div class="textContent">
+                        <p class="h1"></p>
+                      </div>
+                    </div>
+                </div>
+
+            </div>
             <div class="add_boards"> 
                 <input class="input" name="text" placeholder="Add Board" type="text" id="add-board-text" autocomplete="off">
-                <button class="button mt-3">
+                <button class="button mt-3" id="add-board-btn">
                     <svg class="button-content" height="25" width="25" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M0 0h24v24H0z" fill="none"></path><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2z" fill="currentColor"></path></svg>
                     <span class="button-content">Add</span>
                 </button>
@@ -47,6 +60,7 @@
         </div>
 
         <div class="container-fluid display-area">
+           
             <!--Add Cards Button -->
             <div class="add-cards"> 
                 <input class="input" name="text" placeholder="Add Card" type="text" id="add-card-text" autocomplete="off">
@@ -55,6 +69,8 @@
                     <span>Add</span>
                 </button>
             </div>
+
+          
           
             <!--Grids-->
             <div class="card-container">
