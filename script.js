@@ -81,14 +81,36 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCards(activeBoard.cards || []);
     }
 
-    function createCardElement(cardText, tasks=[]) {
+    function createCardElement(cardText, tasks=[], index) {
         const card = document.createElement('div');
         card.classList.add('card');
         card.innerHTML = `
             <div class="bg">
-                <h5 class="mx-2" style="text-transform: capitalize;">${cardText}</h5>
+                <div class="tasks-header">            
+                    <h5 class="mx-2" style="text-transform: capitalize;">${cardText}</h5>
+                    <div class="menuToggle">
+                        <input class="checkbox" type="checkbox" id="toggle-${index}">
+                        <label class="toggle" for="toggle-${index}">
+                            <div class="bar bar--top"></div>
+                            <div class="bar bar--middle"></div>
+                            <div class="bar bar--bottom"></div>
+                        </label>
+                        <div class="dropdown-menu">
+                            <button class="dropdown-item delete-card">Delete</button>
+                            <button class="dropdown-item clear-tasks">Clear Tasks</button>
+                        </div>
+                    </div>
+                </div>
                 <ul class="task-list">
-                ${tasks.map(task => `<li>${task}</li>`).join('')}
+                ${tasks.map((task,taskIndex) => `
+                    <li draggable="true" data-card-index="${index}" data-task-index="${taskIndex}">
+                        ${task}
+                        <span class="task-icons">
+                                <i class="fa-solid fa-pencil edit-task" data-task-index="${taskIndex}"></i>
+                                <i class="fa-solid fa-trash delete-task" data-task-index="${taskIndex}"></i>
+                        </span>
+                    </li>
+                `).join('')}
                 </ul>
                 <div class="add-task">
                     <div class="task-input">
@@ -110,6 +132,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const addTaskButton = card.querySelector('.add-task-button');
         const taskInput = card.querySelector('.to-do-input');
         const taskList = card.querySelector('.task-list');
+
+        const checkbox = card.querySelector('.checkbox');
+        const dropdownMenu = card.querySelector('.dropdown-menu');
+        const deleteButton = card.querySelector('.delete-card');
+        const clearButton = card.querySelector('.clear-tasks');
     
         addTaskButton.addEventListener('click', () => addTask(cardText, taskInput, taskList));
         taskInput.addEventListener('keypress', (e) => {
@@ -117,13 +144,58 @@ document.addEventListener('DOMContentLoaded', () => {
                 addTask(cardText, taskInput, taskList);
             }
         });
+
+        checkbox.addEventListener('change', () => {
+            dropdownMenu.style.display = checkbox.checked ? 'block' : 'none';
+        });
+    
+        deleteButton.addEventListener('click', () => {
+            // Implement delete card functionality
+            console.log('Delete card');
+            const cardIndex = Array.from(card.parentNode.children).indexOf(card);
+            deleteCard(cardIndex);
+        });
+    
+        clearButton.addEventListener('click', () => {
+            // Implement clear tasks functionality
+            console.log('Clear tasks');
+            const cardIndex = Array.from(card.parentNode.children).indexOf(card);
+            clearTasks(cardIndex);
+        });
+
+         // Add event listeners for edit and delete task buttons
+        // taskList.addEventListener('click', (e) => {
+        //     if (e.target.classList.contains('delete-task')) {
+        //         const taskIndex = e.target.dataset.taskIndex;
+        //         deleteTask(index, taskIndex);
+        //     } else if (e.target.classList.contains('edit-task')) {
+        //         const taskIndex = e.target.dataset.taskIndex;
+        //         editTask(index, taskIndex);
+        //     }
+        // });
+        taskList.addEventListener('click', (e) => {
+            if (e.target.classList.contains('delete-task')) {
+                const taskIndex = e.target.closest('li').dataset.taskIndex;
+                deleteTask(index, parseInt(taskIndex));
+            } else if (e.target.classList.contains('edit-task')) {
+                const taskIndex = e.target.closest('li').dataset.taskIndex;
+                editTask(index, parseInt(taskIndex));
+            }
+        });
+
+         // Add drag and drop event listeners
+        taskList.addEventListener('dragstart', dragStart);
+        taskList.addEventListener('dragend', dragEnd);
+        card.addEventListener('dragover', dragOver);
+        card.addEventListener('drop', drop);
+
         return card;
     }
 
     function renderCards(cards) {
         elements.cardContainer.innerHTML = '';
-        cards.forEach(card => {
-            const cardElement = createCardElement(card.text, card.tasks || []);
+        cards.forEach((card,index) => {
+            const cardElement = createCardElement(card.text, card.tasks || [], index);
             elements.cardContainer.appendChild(cardElement);
         });
         checkNoCards();
@@ -134,7 +206,6 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Please select a board first.');
             return;
         }
-        // activeBoard.cards.push({text : cardText, tasks : []});
         const boards = loadBoardsFromLocalStorage();
         const boardIndex = boards.findIndex(board => board.title === activeBoard.title);
         if (boardIndex !== -1) {
@@ -147,9 +218,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Active board not found in localStorage');
             return;
         }
-        // const updatedBoards = boards.map(board => 
-        //     board.title === activeBoard.title ? activeBoard : board
-        // );
         saveBoardsToLocalStorage(boards);
         renderCards(activeBoard.cards);
     }    
@@ -158,6 +226,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const taskText = taskInput.value.trim();
         if (taskText) {
             const li = document.createElement('li');
+            const cardIndex = Array.from(taskList.closest('.card').parentNode.children).indexOf(taskList.closest('.card'));
+            const taskIndex = taskList.children.length;
+
+            li.draggable = true;
+            li.dataset.cardIndex = cardIndex;
+            li.dataset.taskIndex = taskIndex;
+
+            li.innerHTML = `
+            ${taskText}
+            <span class="task-icons">
+                <i class="fa-solid fa-pencil edit-task" data-task-index="${taskIndex}"></i>
+                <i class="fa-solid fa-trash delete-task" data-task-index="${taskIndex}"></i>
+            </span>
+            `;
+
             li.textContent = taskText;
             taskList.appendChild(li);
             taskInput.value = '';
@@ -178,6 +261,12 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             saveBoardsToLocalStorage(updatedBoards);
             activeBoard = updatedBoards.find(board => board.title === activeBoard.title);
+              // Re-render the entire card
+            const cardElement = createCardElement(cardText, activeBoard.cards[cardIndex].tasks, cardIndex);
+            taskList.closest('.card').replaceWith(cardElement);
+
+            // Clear the input
+            taskInput.value = '';
         }
     }
 
@@ -202,6 +291,85 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.noCardsMessage.style.display = 'block';
         } else {
             elements.noCardsMessage.style.display = 'none';
+        }
+    }
+
+    function deleteCard (index) {
+         // Remove the card from the activeBoard.cards array
+        activeBoard.cards.splice(index, 1);
+        // Update localStorage
+        updateLocalStorage();
+        // Re-render the cards
+        renderCards(activeBoard.cards);
+    }
+
+    function clearTasks (index) {
+        // Remove the tasks from the activeBoard.cards[index].tasks array
+        // Clear the tasks for the specific card
+        activeBoard.cards[index].tasks = [];
+        // Update localStorage
+        updateLocalStorage();
+        // Re-render the cards
+        renderCards(activeBoard.cards);
+    }
+
+    function deleteTask(cardIndex, taskIndex) {
+        activeBoard.cards[cardIndex].tasks.splice(taskIndex, 1);
+        updateLocalStorage();
+        renderCards(activeBoard.cards);
+    }
+    
+    function editTask(cardIndex, taskIndex) {
+        const currentTask = activeBoard.cards[cardIndex].tasks[taskIndex];
+        const newTask = prompt('Edit task:', currentTask);
+        if (newTask !== null && newTask.trim() !== '') {
+            activeBoard.cards[cardIndex].tasks[taskIndex] = newTask.trim();
+            updateLocalStorage();
+            renderCards(activeBoard.cards);
+        }
+    }
+
+    function updateLocalStorage() {
+        const boards = loadBoardsFromLocalStorage();
+        const updatedBoards = boards.map(board => 
+            board.title === activeBoard.title ? activeBoard : board
+        );
+        saveBoardsToLocalStorage(updatedBoards);
+    }
+
+    //Drag & Drop Function 
+    let draggedItem = null;
+
+    function dragStart(e) {
+        draggedItem = e.target.closest('li');
+        setTimeout(() => (draggedItem.style.display = 'none'), 0);
+    }
+
+    function dragEnd(e) {
+        setTimeout(() => {
+            draggedItem.style.display = 'block';
+            draggedItem = null;
+        }, 0);
+    }
+
+    function dragOver(e) {
+        e.preventDefault();
+    }
+
+    function drop(e) {
+        e.preventDefault();
+        if (draggedItem) {
+            const sourceCardIndex = parseInt(draggedItem.dataset.cardIndex);
+            const sourceTaskIndex = parseInt(draggedItem.dataset.taskIndex);
+            const targetCard = e.target.closest('.card');
+            const targetCardIndex = Array.from(targetCard.parentNode.children).indexOf(targetCard);
+    
+            // Move the task from source card to target card
+            const task = activeBoard.cards[sourceCardIndex].tasks.splice(sourceTaskIndex, 1)[0];
+            activeBoard.cards[targetCardIndex].tasks.push(task);
+    
+            updateLocalStorage();
+            renderCards(activeBoard.cards);
         }
     }
 
@@ -231,6 +399,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     elements.deleteBoardBtn.addEventListener('click', deleteBoard);
 
+   
+
+ 
+
     // Initial setup
     renderBoards(loadBoardsFromLocalStorage());
     if (elements.boardTitleHeader) {
@@ -238,12 +410,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+
 addCardBtn.addEventListener("click", function() {
     console.log(addCardText.value)
 })
 
-/* SideNav *?*/
 
+//SideNav
 hamburger.addEventListener("click", function() {
     //wrapper.classList.toggle('collapse')
     sidebar.classList.toggle('collapse');
