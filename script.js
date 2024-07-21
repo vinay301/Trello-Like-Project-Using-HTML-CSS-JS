@@ -420,6 +420,7 @@ addCardBtn.addEventListener("click", function() {
 hamburger.addEventListener("click", function() {
     //wrapper.classList.toggle('collapse')
     sidebar.classList.toggle('collapse');
-    // displayArea.classList.toggle('collapse')
+   
+    displayArea.classList.toggle('expanded')
     // alert('hamburger')
 })
